@@ -6,6 +6,7 @@ import numba as nb
 def execute_glimmer(
         data: np.ndarray,
         initialization: np.ndarray = None,
+        target_dim = None,
         decimation_factor=2,
         neighbor_set_size=8,
         max_iter=512,
@@ -17,11 +18,20 @@ def execute_glimmer(
     if rng is None:
         rng = np.random.default_rng()
     if initialization is None:
+        if target_dim is None:
+            target_dim = 2
         norms = np.linalg.norm(data, axis=1)
-        initialization = rng.random((data.shape[0], 2))-0.5
+        initialization = rng.random((data.shape[0], target_dim))-0.5
         initialization *= (norms/np.linalg.norm(initialization, axis=1))[:,None]
     if callback is None:
         callback = lambda *args: None
+    # sanity checking
+    if target_dim and initialization.shape[1] != target_dim:
+        import warnings
+        warnings.warn(f"provided target dimension {target_dim} does not match initialization shape[1]={initialization.shape[1]}")
+
+    if initialization.shape[0] != data.shape[0]:
+        raise Exception(f"provided initialization shape[0]={initialization.shape[0]} does not match data shape[0]={data.shape[0]}")
 
     embedding = initialization
     forces = np.zeros_like(embedding)
