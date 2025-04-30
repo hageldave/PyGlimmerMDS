@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=62.6"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "PyGlimmerMDS"
+version = "0.0.1"
+description = "Python Implementation of the Glimmer algorithm for multidimensional scaling"
+authors = [
+  { name = "David Hägele"}
+]
+license = { file = "LICENSE" }
+readme = "README.md"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+requires-python = ">=3.10"
+dynamic = ["dependencies"]
+[tool.setuptools.dynamic]
+dependencies = {file = ["requirements.txt"]}
+
+[project.urls]
+"Homepage" = "https://github.com/hageldave/PyGlimmerMDS"
+"Bug Tracker" = "https://github.com/hageldave/PyGlimmerMDS/issues"
+
