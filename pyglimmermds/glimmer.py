@@ -1,9 +1,9 @@
 #pip install numpy numba
 import numpy as np
 import numba as nb
-import math
 
-def glimmer(
+
+def execute_glimmer(
         data: np.ndarray,
         initialization: np.ndarray = None,
         decimation_factor=2,
@@ -21,11 +21,9 @@ def glimmer(
         initialization = rng.random((data.shape[0], 2))-0.5
         initialization *= (norms/np.linalg.norm(initialization, axis=1))[:,None]
     if callback is None:
-        callback = noop
+        callback = lambda *args: None
+
     embedding = initialization
-
-    callback(embedding)
-
     forces = np.zeros_like(embedding)
     n = data.shape[0]
     # generate randomized indices
@@ -41,6 +39,7 @@ def glimmer(
     n_levels += 1
     if verbose:
         print(f"levels: {n_levels}, level sizes: {level_sizes[::-1]}")
+
     # start at lowest level
     for level in range(n_levels-1, -1, -1):
         current_n = level_sizes[level]
@@ -60,9 +59,12 @@ def glimmer(
         stresses = []
         sm_stress_prev = float('inf')
         for iter in range(max_iter):
-            current_embedding, current_forces, stress = layout(current_data, current_embedding, current_forces, current_neighbors)
+            current_embedding, current_forces, stress = layout(
+                current_data,
+                current_embedding,
+                current_forces,
+                current_neighbors)
             embedding[current_index_set] = current_embedding
-            callback(embedding)
             forces[current_index_set] = current_forces
             # sort neighbor sets according to distance
             sort_neighbors(current_data, current_neighbors)
@@ -71,6 +73,18 @@ def glimmer(
                 [rng.choice(current_n, neighbor_set_size // 2, replace=False) for _ in range(current_n)])
             stresses.append(stress/current_n)
             sm_stress = smooth_stress(np.array(stresses))
+
+            callback(dict(
+                embedding=embedding,
+                forces=forces,
+                level=level,
+                iter=iter,
+                index_set=current_index_set,
+                smoothed_stress=sm_stress,
+                stress=stresses[-1]))
+
+            if verbose and iter % 10 == 0:
+                print(f"stress after iteration {iter}: {stresses[-1]} smoothed stress: {sm_stress}")
             if sm_stress_prev < float('inf'):
                 stress_ratio = sm_stress_prev / sm_stress
                 # early stopping if stress improvement is only very little
@@ -93,6 +107,7 @@ def glimmer(
                     embedding[next_index_set],
                     forces[next_index_set],
                     neighbors[next_index_set])
+
     return embedding
 
 
@@ -157,9 +172,6 @@ def layout_numba(data: np.ndarray, embedding: np.ndarray, forces: np.ndarray, ne
     return embedding, forces_new, stress
 
 
-def noop(*args):
-    pass
-
 
 if __name__ == '__main__':
     from sklearn import preprocessing as prep
@@ -173,8 +185,7 @@ if __name__ == '__main__':
     print(data.shape)
     data = prep.StandardScaler().fit_transform(data)
 
-    #embedding = glimmer(data, decimation_factor=2, max_iter=512, neighbor_set_size=16)
-    embedding = glimmer(data)
+    projection = execute_glimmer(data)
     p = bkp.figure()
-    p.scatter(embedding[:,0], embedding[:,1], size=1)
+    p.scatter(projection[:, 0], projection[:, 1], size=1)
     bkp.show(p)
