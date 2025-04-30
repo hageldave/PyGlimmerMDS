@@ -46,3 +46,5 @@ scatter = ax.scatter(projection[:, 0], projection[:, 1], c=labels, s=1)
 ax.axis('equal')
 plt.show(fig)
 ```
+![glimmer_iris](https://github.com/user-attachments/assets/f428e789-7691-4bc9-80b5-a80d3cd3b2dd)
+
