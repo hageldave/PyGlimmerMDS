@@ -1,1 +1,2 @@
-from .glimmer import Glimmer
+import glimmer_alg
+import glimmer
