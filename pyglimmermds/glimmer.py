@@ -1,4 +1,4 @@
-from glimmer_alg import execute_glimmer
+from . import execute_glimmer
 import numpy as np
 
 class Glimmer:
