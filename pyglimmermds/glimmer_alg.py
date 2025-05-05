@@ -1,6 +1,5 @@
-#pip install numpy numba
+#pip install numpy
 import numpy as np
-import numba as nb
 
 
 def execute_glimmer(
@@ -169,16 +168,6 @@ def execute_glimmer(
                     neighbors[next_index_set])
 
     return embedding
-
-
-@nb.njit(cache=True, fastmath=True, parallel=True)
-def sort_neighbors(data: np.ndarray, neighbors: np.ndarray):
-    for i in nb.prange(data.shape[0]):
-        point = data[i]
-        neighbor_points = data[neighbors[i]]
-        dists_squared = ((neighbor_points - point) ** 2).sum(axis=1)
-        neighbors[i] = neighbors[i][np.argsort(dists_squared)]
-    return neighbors
 
 
 def __sort_neighbors(data: np.ndarray, neighbors: np.ndarray):
