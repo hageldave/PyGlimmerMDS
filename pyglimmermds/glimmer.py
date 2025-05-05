@@ -43,7 +43,7 @@ class Glimmer:
         rng = None,
         callback = None,
         verbose = True,
-        stress_ratio_tol = 0.99
+        stress_ratio_tol = 1-1e-5
     ):
         self.target_dim = target_dim
         self.decimation_factor = decimation_factor
