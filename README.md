@@ -19,6 +19,8 @@ pip install git+https://github.com/hageldave/PyGlimmerMDS@<commit_hash>
 ```
 
 ## How to use
+Jittering the Iris data set to produce a data set of 38,400 points. Performing Glimmer on this data set.
+
 ```python
 from pyglimmermds import Glimmer, execute_glimmer
 from sklearn import preprocessing as prep
@@ -38,7 +40,7 @@ print(data.shape)
 print(labels.shape)
 # perform MDS
 data = prep.StandardScaler().fit_transform(data)
-mds = Glimmer(decimation_factor=3)
+mds = Glimmer(decimation_factor=2, stress_ratio_tol=1 - 1e-5)
 projection = mds.fit_transform(data) # alternative: execute_glimmer(data)
 # show scatter plot
 fig, ax = plt.subplots()
@@ -46,5 +48,4 @@ scatter = ax.scatter(projection[:, 0], projection[:, 1], c=labels, s=1)
 ax.axis('equal')
 plt.show(fig)
 ```
-![glimmer_iris](https://github.com/user-attachments/assets/f428e789-7691-4bc9-80b5-a80d3cd3b2dd)
-
+![glimmer_iris](https://github.com/user-attachments/assets/8dad7f6b-0f08-4088-b76f-edd572a7f886)
