@@ -28,19 +28,21 @@ from sklearn import datasets
 import numpy as np
 import matplotlib.pyplot as plt
 
+rng = np.random.default_rng(seed=0xBA0BAB)
+
 # get iris data
 dataset = datasets.load_iris()
 data = dataset.data
 labels = dataset.target
 # duplicate data with added noise
 for _ in range(8):
-  data = np.vstack((data,data+(np.random.rand(data.shape[0], data.shape[1])*0.2-.1)))
+  data = np.vstack((data,data+(rng.random((data.shape[0], data.shape[1]))*0.2-.1)))
   labels = np.append(labels,labels)
 print(data.shape)
 print(labels.shape)
 # perform MDS
 data = prep.StandardScaler().fit_transform(data)
-mds = Glimmer(decimation_factor=2, stress_ratio_tol=1 - 1e-5)
+mds = Glimmer(decimation_factor=2, stress_ratio_tol=1-1e-5, rng=rng)
 projection = mds.fit_transform(data) # alternative: execute_glimmer(data)
 # show scatter plot
 fig, ax = plt.subplots()
@@ -48,4 +50,4 @@ scatter = ax.scatter(projection[:, 0], projection[:, 1], c=labels, s=0.02)
 ax.axis('equal')
 plt.show(fig)
 ```
-![glimmer_iris](https://github.com/user-attachments/assets/70656ab6-2988-459e-8830-533a4713a495)
+![glimmer_iris](https://github.com/user-attachments/assets/a1982cf9-59f9-4198-bb8a-984cdd41d210)
