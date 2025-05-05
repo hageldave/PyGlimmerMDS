@@ -44,8 +44,8 @@ mds = Glimmer(decimation_factor=2, stress_ratio_tol=1 - 1e-5)
 projection = mds.fit_transform(data) # alternative: execute_glimmer(data)
 # show scatter plot
 fig, ax = plt.subplots()
-scatter = ax.scatter(projection[:, 0], projection[:, 1], c=labels, s=1)
+scatter = ax.scatter(projection[:, 0], projection[:, 1], c=labels, s=0.02)
 ax.axis('equal')
 plt.show(fig)
 ```
-![glimmer_iris](https://github.com/user-attachments/assets/8dad7f6b-0f08-4088-b76f-edd572a7f886)
+![glimmer_iris](https://github.com/user-attachments/assets/70656ab6-2988-459e-8830-533a4713a495)
