@@ -13,15 +13,56 @@ def execute_glimmer(
         min_level_size=1000,
         rng=None,
         callback=None,
-        verbose=True
+        verbose=True,
+        stress_ratio_tol = 1 - 1e-5
 ) -> np.ndarray:
+    """
+    Execute the glimmer algorithm to perform multidimensional scaling on the provided data set.
+
+    Parameters
+    ----------
+    data : np.ndarray
+        the high-dimensional data set for which multidimensional scaling is performed. (2D array)
+    initialization: np.ndarray
+        [optional] initial low-dimensional embedding (2D array). If None, random initialization will be used.
+    target_dim: int
+        [optional] dimensionality of embedding. Only used if initialization is None.
+    decimation_factor: int
+        factor by which the data set is divided into smaller sets for the different
+        levels. Larger factor results in less levels.
+        E.g., n=10,000 f=2, level sizes result in: 10,000, 10,000/2=5000, 5000/2=2500, 2500/2=1250.
+    neighbor_set_size: int
+        [optional] the number of neighbors used with every data point. Needs to be divisible by 2,
+        in order for the first half relating to the nearest neighbors (near set), and the latter half to the random
+        neighbors (far set).
+    max_iter: int
+        [optional] maximum number of iterations per level.
+    min_level_size: int
+        [optional] minimum number of points in the smallest level.
+    rng: np.random.Generator
+        [optional] random number generator object.
+    callback: function(dict)
+        [optional] callback function which will be called in each iteration of the algorithm.
+        The function argument is a dictionary containing several internal variables, i.e.,
+        embedding, forces, current level, current iteration, index set of the current level, stress, smoothed stress.
+    verbose: bool
+        [optional] if True, will print info about execution.
+    stress_ratio_tol: float
+        [optional] early stopping criterion: when [current stress]/[previous stress] > stress_ratio_tol, stop.
+        Meaning when stress improvement is negligible, terminate the current level.
+
+    Returns
+    -------
+    np.ndarray
+        the low-dimensional embedding (2D array)
+    """
     if rng is None:
         rng = np.random.default_rng()
     if initialization is None:
         if target_dim is None:
             target_dim = 2
         norms = np.linalg.norm(data, axis=1)
-        initialization = rng.random((data.shape[0], target_dim))-0.5
+        initialization = rng.random((data.shape[0], target_dim))-.5
         initialization *= (norms/np.linalg.norm(initialization, axis=1))[:,None]
     if callback is None:
         callback = lambda *args: None
@@ -96,9 +137,9 @@ def execute_glimmer(
             if verbose and iter % 10 == 0:
                 print(f"stress after iteration {iter}: {stresses[-1]} smoothed stress: {sm_stress}")
             if sm_stress_prev < float('inf'):
-                stress_ratio = sm_stress_prev / sm_stress
+                stress_ratio = sm_stress / sm_stress_prev
                 # early stopping if stress improvement is only very little
-                if 1.0 >= stress_ratio > 0.99:
+                if 1.0 >= stress_ratio > stress_ratio_tol:
                     if verbose:
                         print(f"early termination of level {level} after {iter} iterations")
                     break
@@ -143,42 +184,30 @@ def layout(data: np.ndarray, embedding: np.ndarray, forces: np.ndarray, neighbor
     # for each point get neighbor points and compute forces
     if end is None:
         end = data.shape[0]
-    return layout_numba(data, embedding, forces, neighbors, start, end)
+    return __compute_forces_and_layout(data, embedding, forces, neighbors, start, end)
 
 
-#@nb.njit(cache=True, fastmath=True)
-def layout_numba(data: np.ndarray, embedding: np.ndarray, forces: np.ndarray, neighbors: np.ndarray, start:int, end:int):
-    # forces_new = np.zeros_like(forces)
-    # for i in nb.prange(start, end):
-    #     point_hi = data[i]
-    #     neighbor_points_hi = data[neighbors[i]]
-    #     dists_hi = np.sqrt(((neighbor_points_hi - point_hi) ** 2).sum(axis=1))
-    #     point_lo = embedding[i]
-    #     neighbor_points_lo = embedding[neighbors[i]]
-    #     delta = neighbor_points_lo - point_lo
-    #     dists_lo = np.sqrt((delta**2).sum(axis=1)) + 1e-8
-    #     scalings = np.expand_dims(1 - dists_hi/dists_lo, axis=1)
-    #     delta, scalings = np.broadcast_arrays(delta, scalings)
-    #     force_update = (delta * scalings).sum(axis=0)
-    #     forces_new[i] = forces[i]*0.1 + 0.1*force_update
-    # embedding[start:end] += forces_new[start:end]
-    # return embedding, forces_new
-
-    forces_new = np.zeros_like(forces)
+def __compute_forces_and_layout(data: np.ndarray, embedding: np.ndarray, forces: np.ndarray, neighbors: np.ndarray, start:int, end:int):
+    k_neighbors = neighbors.shape[1]
+    normalize_factor = 1.0 / k_neighbors
+    # for each point get its k neighbor points (3D array)
     neighbor_points_hi = data[neighbors]
-    n_neighbors = neighbors.shape[1]
-    normalize_factor = 1.0/n_neighbors
-    diff = neighbor_points_hi - data[:,None,:]
-    dists_hi = np.sqrt((diff**2).sum(axis=-1))
     neighbor_points_lo = embedding[neighbors]
-    delta = neighbor_points_lo - embedding[:,None,:]
+    # compute differences between respective point to neighbors
+    diff = neighbor_points_hi - data[:,None,:]
+    delta = neighbor_points_lo - embedding[:, None, :]
+    # compute distances (lengths of the differences)
+    dists_hi = np.sqrt((diff**2).sum(axis=-1))
     dists_lo = np.sqrt((delta ** 2).sum(axis=-1)) + 1e-8
+    stress = ((dists_hi - dists_lo) ** 2).sum()
+    # compute scale factors of the deltas
     scalings = np.expand_dims(1 - dists_hi / dists_lo, axis=-1)
     delta, scalings = np.broadcast_arrays(delta, scalings)
+    # compute new forces (momentum approach, reusing old forces)
     force_update = (delta * scalings).sum(axis=1) * normalize_factor
     forces_new = forces * 0.5 + force_update
+    # update embedding
     embedding[start:end] += forces_new[start:end]
-    stress = ((dists_hi - dists_lo)**2).sum()
     return embedding, forces_new, stress
 
 
