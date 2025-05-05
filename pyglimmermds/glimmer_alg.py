@@ -121,7 +121,7 @@ def execute_glimmer(
             embedding[current_index_set] = current_embedding
             forces[current_index_set] = current_forces
             # sort neighbor sets according to distance
-            sort_neighbors(current_data, current_neighbors)
+            __sort_neighbors(current_data, current_neighbors)
             # replace the latter half of the neighbors randomly
             neighbors[current_index_set, neighbor_set_size // 2:] = __rand_indices_noduplicates_on_rows(
                 current_n,
@@ -171,13 +171,24 @@ def execute_glimmer(
     return embedding
 
 
-@nb.njit(cache=True, fastmath=True)
+@nb.njit(cache=True, fastmath=True, parallel=True)
 def sort_neighbors(data: np.ndarray, neighbors: np.ndarray):
     for i in nb.prange(data.shape[0]):
         point = data[i]
         neighbor_points = data[neighbors[i]]
         dists_squared = ((neighbor_points - point) ** 2).sum(axis=1)
         neighbors[i] = neighbors[i][np.argsort(dists_squared)]
+    return neighbors
+
+
+def __sort_neighbors(data: np.ndarray, neighbors: np.ndarray):
+    neighbor_points_hi = data[neighbors]
+    # compute differences between respective point to neighbors
+    diff = neighbor_points_hi - data[:, None, :]
+    # compute distances (lengths of the differences)
+    dists_squared = (diff ** 2).sum(axis=-1)
+    sorting = np.argsort(dists_squared, axis=1)
+    neighbors[:,:] = neighbors.ravel()[sorting]
     return neighbors
 
 
@@ -239,12 +250,13 @@ if __name__ == '__main__':
     # get iris data
     dataset = iris.flowers
     data = dataset.iloc[:, 0:4].values
-    for _ in range(7):
-        data = np.vstack((data,data+(np.random.rand(data.shape[0], data.shape[1])*0.2-.1)))
+    rng = np.random.default_rng(seed=0xffff00ff)
+    for _ in range(8):
+        data = np.vstack((data,data+(rng.random((data.shape[0], data.shape[1]))*0.2-.1)))
     print(data.shape)
     data = prep.StandardScaler().fit_transform(data)
 
-    projection = execute_glimmer(data)
+    projection = execute_glimmer(data, rng=rng)
     p = bkp.figure()
     p.scatter(projection[:, 0], projection[:, 1], size=1)
     bkp.show(p)
