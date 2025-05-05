@@ -100,8 +100,11 @@ def execute_glimmer(
         # create/update random neighbors
         if level == n_levels-1:
             # initialize neighbor sets random
-            neighbors[current_index_set] = np.stack(
-                [rng.choice(current_n, neighbor_set_size, replace=False) for _ in range(current_n)])
+            neighbors[current_index_set] = __rand_indices_noduplicates_on_rows(
+                current_n,
+                current_n,
+                neighbor_set_size,
+                rng)
         # do the layout
         current_data = data[current_index_set]
         current_embedding = embedding[current_index_set]
@@ -120,8 +123,11 @@ def execute_glimmer(
             # sort neighbor sets according to distance
             sort_neighbors(current_data, current_neighbors)
             # replace the latter half of the neighbors randomly
-            neighbors[current_index_set, neighbor_set_size // 2:] = np.stack(
-                [rng.choice(current_n, neighbor_set_size // 2, replace=False) for _ in range(current_n)])
+            neighbors[current_index_set, neighbor_set_size // 2:] = __rand_indices_noduplicates_on_rows(
+                current_n,
+                current_n,
+                neighbor_set_size // 2,
+                rng)
             stresses.append(stress/current_n)
             sm_stress = smooth_stress(np.array(stresses))
 
@@ -149,8 +155,11 @@ def execute_glimmer(
             # initialize neighbors for next level
             next_n = level_sizes[level-1]
             next_index_set = rand_indices[:next_n]
-            neighbors[next_index_set[current_n:next_n]] = np.stack(
-                [rng.choice(current_n, neighbor_set_size, replace=False) for _ in range(next_n-current_n)])
+            neighbors[next_index_set[current_n:next_n]] = __rand_indices_noduplicates_on_rows(
+                current_n,
+                next_n-current_n,
+                neighbor_set_size,
+                rng)
             # relaxation step, only moving the new points from next level during layout
             for _ in range(8):
                 embedding[next_index_set], _, _ = layout(
@@ -170,6 +179,17 @@ def sort_neighbors(data: np.ndarray, neighbors: np.ndarray):
         dists_squared = ((neighbor_points - point) ** 2).sum(axis=1)
         neighbors[i] = neighbors[i][np.argsort(dists_squared)]
     return neighbors
+
+
+def __rand_indices_noduplicates_on_rows(max_i, n, m, rng):
+    if n*m < max_i:
+        return rng.choice(max_i, (n, m), replace=False)
+    batches = []
+    batch_size = (max_i//m)*m
+    for i in range((n*m)//batch_size+1):
+        batches.append(rng.choice(max_i, batch_size, replace=False, shuffle=False))
+    return np.concatenate(batches)[:n*m].reshape((n,m), order='C')
+
 
 
 def smooth_stress(stresses: np.ndarray) -> float:
