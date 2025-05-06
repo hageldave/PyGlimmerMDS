@@ -32,6 +32,8 @@ class Glimmer:
     stress_ratio_tol: float
         [optional] early stopping criterion: when [current stress]/[previous stress] > stress_ratio_tol, stop.
         Meaning when stress improvement is negligible, terminate the current level.
+    stress: float
+        the stress attribute will be assigned after fitting the embedding.
     """
 
     def __init__(self,
@@ -54,6 +56,7 @@ class Glimmer:
         self.callback = callback
         self.verbose = verbose
         self.stress_ratio_tol = stress_ratio_tol
+        self.stress = None
 
 
     def fit_transform(self, data: np.ndarray, init: np.ndarray=None) -> np.ndarray:
@@ -72,7 +75,7 @@ class Glimmer:
         np.ndarray
             the low-dimensional embedding (2D array)
         """
-        return execute_glimmer(
+        embedding, stress = execute_glimmer(
             data,
             initialization=init,
             target_dim=self.target_dim,
@@ -85,4 +88,6 @@ class Glimmer:
             verbose=self.verbose,
             stress_ratio_tol=self.stress_ratio_tol
         )
+        self.stress = stress
+        return embedding
 

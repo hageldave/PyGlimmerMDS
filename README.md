@@ -43,7 +43,8 @@ print(labels.shape)
 # perform MDS
 data = prep.StandardScaler().fit_transform(data)
 mds = Glimmer(decimation_factor=2, stress_ratio_tol=1-1e-5, rng=rng)
-projection = mds.fit_transform(data) # alternative: execute_glimmer(data)
+projection = mds.fit_transform(data) # alternative: projection, stress = execute_glimmer(data)
+print(f"final stress={mds.stress}")
 # show scatter plot
 fig, ax = plt.subplots()
 scatter = ax.scatter(projection[:, 0], projection[:, 1], c=labels, s=0.02)

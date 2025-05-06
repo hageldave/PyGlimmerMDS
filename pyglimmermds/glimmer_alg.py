@@ -14,7 +14,7 @@ def execute_glimmer(
         callback=None,
         verbose=True,
         stress_ratio_tol = 1 - 1e-5
-) -> np.ndarray:
+) -> tuple[np.ndarray,float]:
     """
     Execute the glimmer algorithm to perform multidimensional scaling on the provided data set.
 
@@ -52,8 +52,8 @@ def execute_glimmer(
 
     Returns
     -------
-    np.ndarray
-        the low-dimensional embedding (2D array)
+    tuple[np.ndarray, float]
+        the low-dimensional embedding (2D array) and corresponding (smoothed) stress.
     """
     if rng is None:
         rng = np.random.default_rng()
@@ -90,6 +90,7 @@ def execute_glimmer(
     if verbose:
         print(f"levels: {n_levels}, level sizes: {level_sizes[::-1]}")
 
+    sm_stress = None
     # start at lowest level
     for level in range(n_levels-1, -1, -1):
         current_n = level_sizes[level]
@@ -167,7 +168,7 @@ def execute_glimmer(
                     forces[next_index_set],
                     neighbors[next_index_set])
 
-    return embedding
+    return embedding, sm_stress
 
 
 def __sort_neighbors(data: np.ndarray, neighbors: np.ndarray):
