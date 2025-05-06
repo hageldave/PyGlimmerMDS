@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "PyGlimmerMDS"
-version = "0.0.3"
+version = "0.0.4"
 description = "Python Implementation of the Glimmer algorithm for multidimensional scaling"
 authors = [
   { name = "David Hägele"}
