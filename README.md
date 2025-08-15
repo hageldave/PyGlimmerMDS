@@ -71,7 +71,8 @@ plt.show(fig)
 
 This video shows the layouting happening per level and iteration
 
-https://github.com/user-attachments/assets/401d3133-3428-4cb3-ae2f-93ec70936805
+https://github.com/user-attachments/assets/89990824-918c-4ec9-bca1-515a977fe506
+
 
 
 
