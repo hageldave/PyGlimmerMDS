@@ -68,3 +68,10 @@ ax.axis('equal')
 plt.show(fig)
 ```
 ![glimmer_iris](https://github.com/user-attachments/assets/a1982cf9-59f9-4198-bb8a-984cdd41d210)
+
+This video shows the layouting happening per level and iteration
+
+https://github.com/user-attachments/assets/401d3133-3428-4cb3-ae2f-93ec70936805
+
+
+
