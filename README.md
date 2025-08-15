@@ -1,5 +1,6 @@
 # PyGlimmerMDS
-Multidimensional scaling for large data sets - a python implementation of the Glimmer algorithm for multidimensional scaling (MDS) *[[Glimmer: Multilevel MDS on the GPU - 2009 - IEEE TVCG - Ingram, Munzner, Olano](https://doi.org/10.1109/TVCG.2008.85)]*.
+Multidimensional scaling for large data sets - a python implementation of the Glimmer algorithm for multidimensional scaling (MDS).  
+*[[Glimmer: Multilevel MDS on the GPU - 2009 - IEEE TVCG - Ingram, Munzner, Olano](https://doi.org/10.1109/TVCG.2008.85)]*
 
 Glimmer performs dimensionality reduction on high-dimensional data sets of many instances, 
 avoiding the quadratic runtime behavior of naive MDS implementations by employing a multilevel (coarse to fine) approach.
