@@ -230,23 +230,3 @@ def __compute_forces_and_layout(data: np.ndarray, embedding: np.ndarray, forces:
     # update embedding
     embedding[start:end] += forces_new[start:end]
     return embedding, forces_new, stress
-
-
-
-if __name__ == '__main__':
-    from sklearn import preprocessing as prep
-    from bokeh.sampledata import iris
-    import bokeh.plotting as bkp
-    # get iris data
-    dataset = iris.flowers
-    data = dataset.iloc[:, 0:4].values
-    rng = np.random.default_rng(seed=0xffff00ff)
-    for _ in range(8):
-        data = np.vstack((data,data+(rng.random((data.shape[0], data.shape[1]))*0.2-.1)))
-    print(data.shape)
-    data = prep.StandardScaler().fit_transform(data)
-
-    projection = execute_glimmer(data, rng=rng)
-    p = bkp.figure()
-    p.scatter(projection[:, 0], projection[:, 1], size=1)
-    bkp.show(p)
