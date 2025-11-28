@@ -31,9 +31,8 @@ def execute_glimmer(
         levels. Larger factor results in less levels.
         E.g., n=10,000 f=2, level sizes result in: 10,000, 10,000/2=5000, 5000/2=2500, 2500/2=1250.
     neighbor_set_size: int
-        [optional] the number of neighbors used with every data point. Needs to be divisible by 2,
-        in order for the first half relating to the nearest neighbors (near set), and the latter half to the random
-        neighbors (far set).
+        [optional] the number of neighbors for near and far set used with every data point. The effective
+        amound of neighbors will be neighbor_set_size * 2.
     max_iter: int
         [optional] maximum number of iterations per level.
     min_level_size: int
@@ -79,7 +78,7 @@ def execute_glimmer(
     # generate randomized indices
     rand_indices = rng.permutation(n)
     # generate array for storing neighbor set of each point
-    neighbors = np.zeros((n,neighbor_set_size), dtype=int)
+    neighbors = np.zeros((n,neighbor_set_size*3), dtype=int)
     # generate level sizes
     level_sizes = [n]
     n_levels=0
@@ -103,7 +102,7 @@ def execute_glimmer(
             neighbors[current_index_set] = __rand_indices_noduplicates_on_rows(
                 current_n,
                 current_n,
-                neighbor_set_size,
+                neighbor_set_size*3, # only need 2 but due to possible duplicates on replace we need more space
                 rng)
         # do the layout
         current_data = data[current_index_set]
@@ -117,17 +116,20 @@ def execute_glimmer(
                 current_data,
                 current_embedding,
                 current_forces,
-                current_neighbors)
+                current_neighbors[:,:neighbor_set_size*2])
+            current_embedding -= current_embedding.mean(axis=0)
             embedding[current_index_set] = current_embedding
             forces[current_index_set] = current_forces
             # sort neighbor sets according to distance
-            __sort_neighbors(current_data, current_neighbors)
+            #__sort_neighbors(current_data, current_neighbors)
             # replace the latter half of the neighbors randomly
-            neighbors[current_index_set, neighbor_set_size // 2:] = __rand_indices_noduplicates_on_rows(
+            new_neighbor_candidates = __rand_indices_noduplicates_on_rows(
                 current_n,
                 current_n,
-                neighbor_set_size // 2,
+                neighbor_set_size*2,
                 rng)
+            __update_neighbors(current_neighbors, new_neighbor_candidates, current_data, current_data, neighbor_set_size)
+            
             stresses.append(stress/current_n)
             sm_stress = smooth_stress(np.array(stresses))
 
@@ -158,7 +160,7 @@ def execute_glimmer(
             neighbors[next_index_set[current_n:next_n]] = __rand_indices_noduplicates_on_rows(
                 current_n,
                 next_n-current_n,
-                neighbor_set_size,
+                neighbor_set_size*3,
                 rng)
             # relaxation step, only moving the new points from next level during layout
             for _ in range(8):
@@ -166,7 +168,7 @@ def execute_glimmer(
                     data[next_index_set],
                     embedding[next_index_set],
                     forces[next_index_set],
-                    neighbors[next_index_set])
+                    neighbors[next_index_set, :neighbor_set_size*2])
 
     return embedding, sm_stress
 
@@ -180,6 +182,23 @@ def __sort_neighbors(data: np.ndarray, neighbors: np.ndarray):
     sorting = np.argsort(dists_squared, axis=1)
     neighbors[:,:] = neighbors.ravel()[sorting]
     return neighbors
+
+
+def __update_neighbors(curr_neighbors, new_randoms, positions, neighbor_positions, k):
+  curr_neighbors[:,k:] = new_randoms
+  index_order = np.argsort(curr_neighbors, axis=1)
+  curr_neighbors[:,:] = curr_neighbors.ravel()[index_order]
+  # find duplicate neighbors
+  _, first_index, counts = np.unique(curr_neighbors, return_index=True, return_counts=True, axis=1)
+  indices_to_mark = first_index[counts > 1]
+  # determine distances
+  dists_sq = ((neighbor_positions[curr_neighbors] - positions[:,None,:])**2).sum(axis=-1)
+  # mark duplicates as infinitely far away
+  dists_sq[indices_to_mark] = np.inf
+  # sort by distances
+  order = np.argsort(dists_sq, axis=1)
+  curr_neighbors[:,:] = curr_neighbors.ravel()[order]
+  return curr_neighbors
 
 
 def __rand_indices_noduplicates_on_rows(max_i, n, m, rng):
