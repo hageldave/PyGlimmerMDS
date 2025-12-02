@@ -37,7 +37,7 @@ if __name__ == '__main__':
     from sklearn import preprocessing as prep
     from sklearn import datasets
 
-    rng = np.random.default_rng(seed=0xC0FFEE)
+    rng = np.random.default_rng(seed=0xBA0BAB)
 
     # get iris data
     dataset = datasets.load_iris()

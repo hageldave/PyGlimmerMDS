@@ -1,5 +1,6 @@
 #pip install numpy
 import numpy as np
+from .util import row_wise_duplicate_indices 
 
 
 def execute_glimmer(
@@ -188,19 +189,20 @@ def __update_neighbors(curr_neighbors, new_randoms, positions, neighbor_position
   old = curr_neighbors.copy()
   curr_neighbors[:,k:] = new_randoms
   index_order = np.argsort(curr_neighbors, axis=1)
-  curr_neighbors[:,:] = curr_neighbors.ravel()[index_order]
+  curr_neighbors[:,:] = np.take_along_axis(curr_neighbors, index_order, axis=1)
+  #np.put_along_axis(curr_neighbors, index_order, curr_neighbors, axis=1)
   # find duplicate neighbors
-  _, first_index, counts = np.unique(curr_neighbors, return_index=True, return_counts=True, axis=1)
-  indices_to_mark = first_index[counts > 1]
+  #_, first_index, counts = np.unique(curr_neighbors, return_index=True, return_counts=True, axis=0)
+  indices_to_mark = row_wise_duplicate_indices(curr_neighbors)  #first_index[counts > 1]
   # determine distances
   dists_sq = ((neighbor_positions[curr_neighbors] - positions[:,None,:])**2).sum(axis=-1)
   # mark duplicates as infinitely far away
-  dists_sq[indices_to_mark] = np.inf
+  dists_sq[indices_to_mark] = 1e16  # np.inf
   # sort by distances
   order = np.argsort(dists_sq, axis=1)
-  curr_neighbors[:,:] = curr_neighbors.ravel()[order]
+  curr_neighbors[:,:] = np.take_along_axis(curr_neighbors, order, axis=1)
   diff_near = np.argwhere(old[:,:k] != curr_neighbors[:,:k])
-  print(f"index diff {diff_near.shape[0]}, duplicates {counts[counts>1].sum()}, indices{indices_to_mark}")
+  #print(f"index diff {diff_near.shape[0]}, duplicates {len(indices_to_mark[0])}, nearset_dist{np.take_along_axis(dists_sq, order, axis=1)[:,:k].sum()}")
   return curr_neighbors
 
 
@@ -211,7 +213,7 @@ def __rand_indices_noduplicates_on_rows(max_i, n, m, rng):
     batches = []
     batch_size = (max_i//m)*m
     for i in range((n*m)//batch_size+1):
-        batches.append(rng.choice(max_i, batch_size, replace=False, shuffle=False))
+        batches.append(rng.choice(max_i, batch_size, replace=False, shuffle=True))
     return np.concatenate(batches)[:n*m].reshape((n,m), order='C')
 
 
