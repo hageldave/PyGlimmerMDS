@@ -185,6 +185,7 @@ def __sort_neighbors(data: np.ndarray, neighbors: np.ndarray):
 
 
 def __update_neighbors(curr_neighbors, new_randoms, positions, neighbor_positions, k):
+  old = curr_neighbors.copy()
   curr_neighbors[:,k:] = new_randoms
   index_order = np.argsort(curr_neighbors, axis=1)
   curr_neighbors[:,:] = curr_neighbors.ravel()[index_order]
@@ -198,11 +199,14 @@ def __update_neighbors(curr_neighbors, new_randoms, positions, neighbor_position
   # sort by distances
   order = np.argsort(dists_sq, axis=1)
   curr_neighbors[:,:] = curr_neighbors.ravel()[order]
+  diff_near = np.argwhere(old[:,:k] != curr_neighbors[:,:k])
+  print(f"index diff {diff_near.shape[0]}, duplicates {counts[counts>1].sum()}, indices{indices_to_mark}")
   return curr_neighbors
 
 
 def __rand_indices_noduplicates_on_rows(max_i, n, m, rng):
     if n*m < max_i:
+        print("using no batches")
         return rng.choice(max_i, (n, m), replace=False)
     batches = []
     batch_size = (max_i//m)*m
