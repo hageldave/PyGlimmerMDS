@@ -32,6 +32,8 @@ class Glimmer:
     stress_ratio_tol: float
         [optional] early stopping criterion: when [current stress]/[previous stress] > stress_ratio_tol, stop.
         Meaning when stress improvement is negligible, terminate the current level.
+    alpha: float
+        [optional] learning rate: scale factor for gradients in gradient descent.
     stress: float
         the stress attribute will be assigned after fitting the embedding.
     """
@@ -45,7 +47,8 @@ class Glimmer:
         rng = None,
         callback = None,
         verbose = True,
-        stress_ratio_tol = 1-1e-5
+        stress_ratio_tol = 1-1e-5,
+        alpha = 1.0,
     ):
         self.target_dim = target_dim
         self.decimation_factor = decimation_factor
@@ -56,6 +59,7 @@ class Glimmer:
         self.callback = callback
         self.verbose = verbose
         self.stress_ratio_tol = stress_ratio_tol
+        self.alpha = alpha
         self.stress = None
 
 
@@ -86,7 +90,8 @@ class Glimmer:
             rng=self.rng,
             callback=self.callback,
             verbose=self.verbose,
-            stress_ratio_tol=self.stress_ratio_tol
+            stress_ratio_tol=self.stress_ratio_tol,
+            alpha=self.alpha
         )
         self.stress = stress
         return embedding

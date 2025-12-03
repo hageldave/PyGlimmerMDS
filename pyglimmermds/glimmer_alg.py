@@ -14,7 +14,8 @@ def execute_glimmer(
         rng=None,
         callback=None,
         verbose=True,
-        stress_ratio_tol = 1 - 1e-5
+        stress_ratio_tol = 1 - 1e-5,
+        alpha=1.0
 ) -> tuple[np.ndarray,float]:
     """
     Execute the glimmer algorithm to perform multidimensional scaling on the provided data set.
@@ -49,6 +50,8 @@ def execute_glimmer(
     stress_ratio_tol: float
         [optional] early stopping criterion: when [current stress]/[previous stress] > stress_ratio_tol, stop.
         Meaning when stress improvement is negligible, terminate the current level.
+    alpha: float
+        [optional] learning rate: scale factor for gradients in gradient descent.
 
     Returns
     -------
@@ -117,7 +120,8 @@ def execute_glimmer(
                 current_data,
                 current_embedding,
                 current_forces,
-                current_neighbors[:,:neighbor_set_size*2])
+                current_neighbors[:,:neighbor_set_size*2],
+                alpha=alpha)
             current_embedding -= current_embedding.mean(axis=0)
             embedding[current_index_set] = current_embedding
             forces[current_index_set] = current_forces
@@ -190,9 +194,7 @@ def __update_neighbors(curr_neighbors, new_randoms, positions, neighbor_position
   curr_neighbors[:,k:] = new_randoms
   index_order = np.argsort(curr_neighbors, axis=1)
   curr_neighbors[:,:] = np.take_along_axis(curr_neighbors, index_order, axis=1)
-  #np.put_along_axis(curr_neighbors, index_order, curr_neighbors, axis=1)
   # find duplicate neighbors
-  #_, first_index, counts = np.unique(curr_neighbors, return_index=True, return_counts=True, axis=0)
   indices_to_mark = row_wise_duplicate_indices(curr_neighbors)  #first_index[counts > 1]
   # determine distances
   dists_sq = ((neighbor_positions[curr_neighbors] - positions[:,None,:])**2).sum(axis=-1)
@@ -202,7 +204,6 @@ def __update_neighbors(curr_neighbors, new_randoms, positions, neighbor_position
   order = np.argsort(dists_sq, axis=1)
   curr_neighbors[:,:] = np.take_along_axis(curr_neighbors, order, axis=1)
   diff_near = np.argwhere(old[:,:k] != curr_neighbors[:,:k])
-  #print(f"index diff {diff_near.shape[0]}, duplicates {len(indices_to_mark[0])}, nearset_dist{np.take_along_axis(dists_sq, order, axis=1)[:,:k].sum()}")
   return curr_neighbors
 
 
@@ -226,14 +227,14 @@ def smooth_stress(stresses: np.ndarray) -> float:
         return stresses[-8:].mean()
 
 
-def layout(data: np.ndarray, embedding: np.ndarray, forces: np.ndarray, neighbors: np.ndarray, start=0, end=None):
+def layout(data: np.ndarray, embedding: np.ndarray, forces: np.ndarray, neighbors: np.ndarray, start=0, end=None, alpha=1.0):
     # for each point get neighbor points and compute forces
     if end is None:
         end = data.shape[0]
-    return __compute_forces_and_layout(data, embedding, forces, neighbors, start, end)
+    return __compute_forces_and_layout(data, embedding, forces, neighbors, start, end, alpha)
 
 
-def __compute_forces_and_layout(data: np.ndarray, embedding: np.ndarray, forces: np.ndarray, neighbors: np.ndarray, start:int, end:int):
+def __compute_forces_and_layout(data: np.ndarray, embedding: np.ndarray, forces: np.ndarray, neighbors: np.ndarray, start:int, end:int, alpha=1.0):
     k_neighbors = neighbors.shape[1]
     normalize_factor = 1.0 / k_neighbors
     # for each point get its k neighbor points (3D array)
@@ -253,5 +254,5 @@ def __compute_forces_and_layout(data: np.ndarray, embedding: np.ndarray, forces:
     force_update = (delta * scalings).sum(axis=1) * normalize_factor
     forces_new = forces * 0.5 + force_update
     # update embedding
-    embedding[start:end] += forces_new[start:end]
+    embedding[start:end] += forces_new[start:end] * alpha
     return embedding, forces_new, stress
