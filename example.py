@@ -33,7 +33,7 @@ def animate_glimmer(dataset: dict, mds: Glimmer):
     projection = mds.fit_transform(dataset['data'])
 
 
-if __name__ == '__main__':
+def main_animate():
     from sklearn import preprocessing as prep
     from sklearn import datasets
 
@@ -54,4 +54,38 @@ if __name__ == '__main__':
     mds = Glimmer(rng=rng)
     animate_glimmer(dataset, mds)
 
+def main_simple():
+    from pyglimmermds import Glimmer, execute_glimmer
+    from sklearn import preprocessing as prep
+    from sklearn import datasets
+    import numpy as np
+    import matplotlib.pyplot as plt
+
+    rng = np.random.default_rng(seed=0xBA0BAB)
+
+    # get iris data
+    dataset = datasets.load_iris()
+    data = dataset.data
+    labels = dataset.target
+    # duplicate data with added noise
+    for _ in range(8):
+        data = np.vstack((data,data+(rng.random((data.shape[0], data.shape[1]))*0.2-.1)))
+        labels = np.append(labels,labels)
+    print(data.shape)
+    print(labels.shape)
+
+    # perform MDS
+    data = prep.StandardScaler().fit_transform(data)
+    mds = Glimmer(decimation_factor=2, stress_ratio_tol=1-1e-5, rng=rng)
+    projection = mds.fit_transform(data) # alternative: projection, stress = execute_glimmer(data)
+    print(f"final stress={mds.stress}")
+
+    # show scatter plot
+    fig, ax = plt.subplots()
+    scatter = ax.scatter(projection[:, 0], projection[:, 1], c=labels, s=0.02)
+    ax.set_aspect('equal', 'box')
+    plt.show()
+
+if __name__ == '__main__':
+    main_simple()
     

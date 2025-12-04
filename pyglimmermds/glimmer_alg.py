@@ -220,11 +220,12 @@ def __rand_indices_noduplicates_on_rows(max_i, n, m, rng):
 
 
 def smooth_stress(stresses: np.ndarray) -> float:
-    if len(stresses) < 8:
+    width = 32
+    if len(stresses) < width:
         return float('inf')
     else:
-        # TODO: convolution with kernel
-        return stresses[-8:].mean()
+        # TODO: convolution with kernel (currently implicit box kernel)
+        return stresses[-width:].mean()
 
 
 def layout(data: np.ndarray, embedding: np.ndarray, forces: np.ndarray, neighbors: np.ndarray, start=0, end=None, alpha=1.0):
