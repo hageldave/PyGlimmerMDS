@@ -67,12 +67,11 @@ scatter = ax.scatter(projection[:, 0], projection[:, 1], c=labels, s=0.02)
 ax.axis('equal')
 plt.show(fig)
 ```
-![glimmer_iris](https://github.com/user-attachments/assets/a1982cf9-59f9-4198-bb8a-984cdd41d210)
+![glimmer_iris](https://github.com/user-attachments/assets/67b10cec-2e76-4e5e-8d63-6ec9ab4765fa)
+
 
 This video shows the layouting happening per level and iteration
 
-https://github.com/user-attachments/assets/89990824-918c-4ec9-bca1-515a977fe506
-
-
+https://github.com/user-attachments/assets/aa9f7a8c-1c03-46a3-8ee1-19b3d2d4033e
 
 
