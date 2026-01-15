@@ -14,9 +14,8 @@ class Glimmer:
         levels. Larger factor results in less levels.
         E.g., n=10,000 f=2, level sizes result in: 10,000, 10,000/2=5000, 5000/2=2500, 2500/2=1250.
     neighbor_set_size: int
-        [optional] the number of neighbors used with every data point. Needs to be divisible by 2,
-        in order for the first half relating to the nearest neighbors (near set), and the latter half to the random
-        neighbors (far set).
+        [optional] the number of neighbors for near and far set used with every data point. The effective
+        amound of neighbors will be neighbor_set_size * 2.
     max_iter: int
         [optional] maximum number of iterations per level.
     min_level_size: int
