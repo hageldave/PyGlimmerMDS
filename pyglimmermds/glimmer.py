@@ -70,6 +70,8 @@ class Glimmer:
         ----------
         data: np.ndarray
             the high-dimensional data set for which multidimensional scaling is performed. (2D array)
+            OR
+            the square dissimilarity matrix of pairwise distances.
         init: np.ndarray
             [optional] initial low-dimensional embedding (2D array). If None, random initialization will be used.
 

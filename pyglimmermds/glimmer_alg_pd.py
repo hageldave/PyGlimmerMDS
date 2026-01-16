@@ -18,7 +18,9 @@ def execute_glimmer_pd(
         alpha=1.0
 ) -> tuple[np.ndarray,float]:
     """
-    Execute the glimmer algorithm to perform multidimensional scaling on the provided data set.
+    Execute the glimmer algorithm to perform multidimensional scaling on the set of pairwise distances.
+    This is usually only feasible for medium sized data sets (< 50K x 50K) due to the large amount of memory required to
+    hold the dissimilarity matrix.
 
     Parameters
     ----------
@@ -111,7 +113,7 @@ def execute_glimmer_pd(
                 neighbor_set_size*3, # only need 2 but due to possible duplicates on replace we need more space
                 rng)
         # do the layout
-        current_pd = pd[current_index_set, current_index_set]
+        current_pd = pd[current_index_set,:][:,current_index_set]
         current_embedding = embedding[current_index_set]
         current_forces = forces[current_index_set]
         current_neighbors = neighbors[current_index_set]
@@ -171,7 +173,7 @@ def execute_glimmer_pd(
             # relaxation step, only moving the new points from next level during layout
             for _ in range(8):
                 embedding[next_index_set], _, _ = layout(
-                    pd[next_index_set, next_index_set],
+                    pd[next_index_set,:][:,next_index_set],
                     embedding[next_index_set],
                     forces[next_index_set],
                     neighbors[next_index_set, :neighbor_set_size*2])
@@ -187,7 +189,7 @@ def __update_neighbors(curr_neighbors, new_randoms, pd, neighbor_pd, k):
   # find duplicate neighbors
   indices_to_mark = row_wise_duplicate_indices(curr_neighbors)  #first_index[counts > 1]
   # determine distances
-  dists_sq = pd[curr_neighbors].copy() #((neighbor_positions[curr_neighbors] - positions[:,None,:])**2).sum(axis=-1)
+  dists_sq = pd[np.arange(pd.shape[0])[:,None], curr_neighbors].copy() #((neighbor_positions[curr_neighbors] - positions[:,None,:])**2).sum(axis=-1)
   # mark duplicates as infinitely far away
   dists_sq[indices_to_mark] = 1e16  # np.inf
   # sort by distances
@@ -235,7 +237,7 @@ def __compute_forces_and_layout(pd: np.ndarray, embedding: np.ndarray, forces: n
     #diff = neighbor_points_hi - data[:,None,:]
     delta = neighbor_points_lo - embedding[:, None, :]
     # compute distances (lengths of the differences)
-    dists_hi = pd[neighbors] #np.sqrt((diff**2).sum(axis=-1))
+    dists_hi = pd[np.arange(pd.shape[0])[:,None],neighbors] #np.sqrt((diff**2).sum(axis=-1))
     dists_lo = np.sqrt((delta ** 2).sum(axis=-1)) + 1e-8
     stress = ((dists_hi - dists_lo) ** 2).sum()
     # compute scale factors of the deltas
