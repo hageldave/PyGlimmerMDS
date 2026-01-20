@@ -118,7 +118,7 @@ def gradient_block_with_weights(
     return g_block
 
 
-def run_mds_minibatch(
+def execute_mds_minibatch(
     x: np.ndarray,
     y_init: np.ndarray,
     weights: Callable[[int, int], float] = None,
