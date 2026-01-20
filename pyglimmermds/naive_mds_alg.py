@@ -252,7 +252,7 @@ if __name__ == '__main__':
     projection = np.random.rand(data.shape[0], lo_dim)  # random init
     
     # Run mini-batch MDS with block_size=200 (no weights = faster)
-    projection = run_mds_minibatch(
+    projection = execute_mds_minibatch(
         data,
         y_init=projection,
         weights=None,  # No custom weights = uniform weights
