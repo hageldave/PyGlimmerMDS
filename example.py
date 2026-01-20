@@ -26,7 +26,7 @@ def show_curr_state(glimmer_state, labels, i):
 def animate_glimmer(dataset: dict, mds: Glimmer):
     iter = [0]
     def callback(obj):
-        show_curr_state(obj, labels, iter[0])
+        show_curr_state(obj, dataset['labels'], iter[0])
         iter[0]+=1
     mds.callback = callback
     #execute_glimmer(dataset['data'], callback=callback, rng=rng)
@@ -34,6 +34,7 @@ def animate_glimmer(dataset: dict, mds: Glimmer):
 
 
 def main_animate():
+    import sklearn
     from sklearn import preprocessing as prep
     from sklearn import datasets
 
@@ -50,7 +51,10 @@ def main_animate():
     data = prep.StandardScaler().fit_transform(data)
     print(data.shape)
 
-    dataset = dict(data=data, labels=labels)
+    pd = sklearn.metrics.pairwise_distances(data)
+
+
+    dataset = dict(data=pd, labels=labels)
     mds = Glimmer(rng=rng)
     animate_glimmer(dataset, mds)
 
@@ -87,5 +91,5 @@ def main_simple():
     plt.show()
 
 if __name__ == '__main__':
-    main_simple()
+    main_animate()
     

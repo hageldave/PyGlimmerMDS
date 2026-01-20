@@ -1,4 +1,4 @@
-from . import execute_glimmer
+from . import execute_glimmer, execute_glimmer_pd
 import numpy as np
 
 class Glimmer:
@@ -70,6 +70,8 @@ class Glimmer:
         ----------
         data: np.ndarray
             the high-dimensional data set for which multidimensional scaling is performed. (2D array)
+            OR
+            the square dissimilarity matrix of pairwise distances.
         init: np.ndarray
             [optional] initial low-dimensional embedding (2D array). If None, random initialization will be used.
 
@@ -78,8 +80,8 @@ class Glimmer:
         np.ndarray
             the low-dimensional embedding (2D array)
         """
-        embedding, stress = execute_glimmer(
-            data,
+
+        kwargs = dict(
             initialization=init,
             target_dim=self.target_dim,
             decimation_factor=self.decimation_factor,
@@ -92,6 +94,17 @@ class Glimmer:
             stress_ratio_tol=self.stress_ratio_tol,
             alpha=self.alpha
         )
+
+        if data.shape[0] != data.shape[1]:
+            embedding, stress = execute_glimmer(
+                data,
+                **kwargs
+            )
+        else:
+            embedding, stress = execute_glimmer_pd(
+                data,
+                **kwargs
+            )
         self.stress = stress
         return embedding
 
