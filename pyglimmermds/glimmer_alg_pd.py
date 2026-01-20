@@ -78,7 +78,7 @@ def execute_glimmer_pd(
         warnings.warn(f"provided target dimension {target_dim} does not match initialization shape[1]={initialization.shape[1]}")
 
     if initialization.shape[0] != pd.shape[0]:
-        raise Exception(f"provided initialization shape[0]={initialization.shape[0]} does not match data shape[0]={dissimilarities.shape[0]}")
+        raise Exception(f"provided initialization shape[0]={initialization.shape[0]} does not match data shape[0]={pd.shape[0]}")
 
     embedding = initialization
     forces = np.zeros_like(embedding)
