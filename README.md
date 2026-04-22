@@ -4,7 +4,7 @@ Multidimensional scaling (MDS) for large data sets - a python implementation of 
 
 Glimmer performs dimensionality reduction on high-dimensional data sets of many instances, 
 avoiding the quadratic runtime behavior of naive MDS implementations by employing a multilevel (coarse to fine) approach.
-This implementation does **not** utilize the GPU, but gives considerable speedup nonetheless and makes MDS on large data
+This implementation has a GPU switch, but gives considerable speedup with CPU nonetheless and makes MDS on large data
 sets feasible.
 
 Glimmer is a metric MDS and uses Euclidean distance in the high-dimensional space as the dissimilarity measure. 
@@ -28,7 +28,7 @@ pip install git+https://github.com/hageldave/PyGlimmerMDS@<commit_hash>
 ### Very briefly
 Performing Glimmer on a data set works like this:
 ```python
-mds = Glimmer(decimation_factor=2, stress_ratio_tol=1-1e-5, rng=rng)
+mds = Glimmer(decimation_factor=2, stress_ratio_tol=1-1e-5, rng=rng, gpu=False)
 projection = mds.fit_transform(data) # alternative: projection, stress = execute_glimmer(data)
 print(f"final stress={mds.stress}")
 ```

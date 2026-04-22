@@ -5,8 +5,8 @@ from pyglimmermds import Glimmer, execute_glimmer
 def show_curr_state(glimmer_state, labels, i):
     lvl = glimmer_state["level"]
     itr = glimmer_state["iter"]
-    emb = glimmer_state["embedding"]
-    idx = glimmer_state["index_set"]
+    emb = glimmer_state["embedding"]()
+    idx = glimmer_state["index_set"]()
     cur = emb[idx]
     lab = labels[idx]
     fig,ax = plt.subplots()
@@ -26,11 +26,13 @@ def show_curr_state(glimmer_state, labels, i):
 def animate_glimmer(dataset: dict, mds: Glimmer):
     iter = [0]
     def callback(obj):
-        show_curr_state(obj, dataset['labels'], iter[0])
+        if iter[0] % (10 if mds.gpu else 1) == 0: # if GPU only every 10nth iteration to keep GPU->CPU transfer overhead low
+            show_curr_state(obj, dataset['labels'], iter[0])
         iter[0]+=1
     mds.callback = callback
     #execute_glimmer(dataset['data'], callback=callback, rng=rng)
-    projection = mds.fit_transform(dataset['data'])
+    data = dataset['data']
+    projection = mds.fit_transform(data, pairwise_distances=data.shape[0]==data.shape[1])
 
 
 def main_animate():
@@ -54,8 +56,8 @@ def main_animate():
     pd = sklearn.metrics.pairwise_distances(data)
 
 
-    dataset = dict(data=pd, labels=labels)
-    mds = Glimmer(rng=rng)
+    dataset = dict(data=data, labels=labels)
+    mds = Glimmer(rng=rng, gpu=False)
     animate_glimmer(dataset, mds)
 
 def main_simple():
@@ -72,7 +74,7 @@ def main_simple():
     data = dataset.data
     labels = dataset.target
     # duplicate data with added noise
-    for _ in range(8):
+    for _ in range(13):
         data = np.vstack((data,data+(rng.random((data.shape[0], data.shape[1]))*0.2-.1)))
         labels = np.append(labels,labels)
     print(data.shape)
@@ -80,7 +82,7 @@ def main_simple():
 
     # perform MDS
     data = prep.StandardScaler().fit_transform(data)
-    mds = Glimmer(decimation_factor=2, stress_ratio_tol=1-1e-5, rng=rng)
+    mds = Glimmer(decimation_factor=2, stress_ratio_tol=1-1e-5, rng=rng, gpu=True)
     projection = mds.fit_transform(data) # alternative: projection, stress = execute_glimmer(data)
     print(f"final stress={mds.stress}")
 

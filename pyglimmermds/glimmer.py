@@ -1,5 +1,6 @@
-from . import execute_glimmer, execute_glimmer_pd
+from . import execute_glimmer, execute_glimmer_pd, HAS_GPU_IMPL
 import numpy as np
+import warnings
 
 class Glimmer:
     """
@@ -26,6 +27,8 @@ class Glimmer:
         [optional] callback function which will be called in each iteration of the algorithm.
         The function argument is a dictionary containing several internal variables, i.e.,
         embedding, forces, current level, current iteration, index set of the current level, stress, smoothed stress.
+        The objects embedding, forces, and index_set are callables that return arrays when invoked,
+        e.g. emb = dict['embedding'](). This design is to memory transfer on demand when using GPU (no overhead for CPU).
     verbose: bool
         [optional] if True, will print info about execution.
     stress_ratio_tol: float
@@ -35,6 +38,9 @@ class Glimmer:
         [optional] learning rate: scale factor for gradients in gradient descent.
     stress: float
         the stress attribute will be assigned after fitting the embedding.
+    gpu: bool
+        [optional] if True, will use GPU implementation if available. Note that GPU support is an optional feature, 
+        which is enabled by installing a CuPy package (cupy-cuda12x, cupy-cuda13x, cupy-rocm-7-0).
     """
 
     def __init__(self,
@@ -48,6 +54,7 @@ class Glimmer:
         verbose = True,
         stress_ratio_tol = 1-1e-5,
         alpha = 1.0,
+        gpu=False
     ):
         self.target_dim = target_dim
         self.decimation_factor = decimation_factor
@@ -60,9 +67,10 @@ class Glimmer:
         self.stress_ratio_tol = stress_ratio_tol
         self.alpha = alpha
         self.stress = None
+        self.gpu = gpu
 
 
-    def fit_transform(self, data: np.ndarray, init: np.ndarray=None) -> np.ndarray:
+    def fit_transform(self, data: np.ndarray, init: np.ndarray=None, pairwise_distances=False) -> np.ndarray:
         """
         Fits a low-dimensional embedding to the data.
 
@@ -74,6 +82,12 @@ class Glimmer:
             the square dissimilarity matrix of pairwise distances.
         init: np.ndarray
             [optional] initial low-dimensional embedding (2D array). If None, random initialization will be used.
+        pairwise_distances: bool
+            [optional] If False (default), the input data is treated as a high-dimensional dataset (n x d), 
+            where n is the number of samples and d is the number of features.
+            If True, the input data is treated as a pairwise distance matrix. In this case, the input data must be a 
+            square matrix (n x n), where n is the number of samples. 
+            
 
         Returns
         -------
@@ -95,16 +109,32 @@ class Glimmer:
             alpha=self.alpha
         )
 
-        if data.shape[0] != data.shape[1]:
-            embedding, stress = execute_glimmer(
-                data,
-                **kwargs
-            )
-        else:
+        if pairwise_distances:
+            if data.shape[0] != data.shape[1]:
+                raise ValueError("When pairwise_distances is True, data must be a square matrix.")
+            if self.gpu:
+                warnings.warn("GPU support for pairwise distance matrices is not implemented yet. Falling back to CPU.")
+
             embedding, stress = execute_glimmer_pd(
                 data,
                 **kwargs
             )
+        else:
+            if data.shape[0] == data.shape[1]:
+                warnings.warn("Input data is a square matrix. If this is a pairwise distance matrix, please set pairwise_distances=True. Treating input as high-dimensional dataset.")
+            if self.gpu and not HAS_GPU_IMPL:
+                warnings.warn("GPU support is an optional feature and currently not available. Please install a CuPy package (cupy-cuda12x, cupy-cuda13x, cupy-rocm-7-0). Falling back to CPU.")
+            if self.gpu and HAS_GPU_IMPL:
+                from . import execute_glimmer_gpu
+                embedding, stress = execute_glimmer_gpu(
+                    data,
+                    **kwargs
+                )
+            else:
+                embedding, stress = execute_glimmer(
+                    data,
+                    **kwargs
+                )
         self.stress = stress
         return embedding
 

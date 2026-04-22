@@ -47,6 +47,8 @@ def execute_glimmer_pd(
         [optional] callback function which will be called in each iteration of the algorithm.
         The function argument is a dictionary containing several internal variables, i.e.,
         embedding, forces, current level, current iteration, index set of the current level, stress, smoothed stress.
+        The objects embedding, forces, and index_set are callables that return arrays when invoked,
+        e.g. emb = dict['embedding'](). This design is to achieve compatibility with the GPU version of this algorithm.
     verbose: bool
         [optional] if True, will print info about execution.
     stress_ratio_tol: float
@@ -141,12 +143,20 @@ def execute_glimmer_pd(
             stresses.append(stress/current_n)
             sm_stress = smooth_stress(np.array(stresses))
 
+            # make getters for callback to achieve compatibility with GPU version (where arrays are on GPU and not directly accessible)
+            def get_embedding() -> np.ndarray:
+                 return embedding
+            def get_forces() -> np.ndarray:
+                return forces
+            def get_index_set() -> np.ndarray:
+                return current_index_set
+
             callback(dict(
-                embedding=embedding,
-                forces=forces,
+                embedding=get_embedding,
+                forces=get_forces,
                 level=level,
                 iter=iter,
-                index_set=current_index_set,
+                index_set=get_index_set,
                 smoothed_stress=sm_stress,
                 stress=stresses[-1]))
 
