@@ -33,6 +33,16 @@ projection = mds.fit_transform(data) # alternative: projection, stress = execute
 print(f"final stress={mds.stress}")
 ```
 
+### Enable GPU acceleration
+The gpu implementation is based on [CuPy](https://github.com/cupy/cupy), which is an optional dependency. 
+The gpu implementation will only be available if a CuPy package is installed.
+Which CuPy package to install depends on the available hardware and driver (i.e. `cupy-cuda12x`, `cupy-cuda13x`, or `cupy-rocm-7-0` as of writing). GPU acceleration can then be used as follows:
+```python
+mds = Glimmer(gpu=True, ....)
+# or
+projection, stress = execute_glimmer_gpu(data, ....)
+```
+
 ### Complete example
 Jittering the Iris data set to produce a data set of 38,400 points. Performing Glimmer on this data set.
 ```python
