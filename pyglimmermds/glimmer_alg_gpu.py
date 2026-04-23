@@ -9,7 +9,7 @@ import cupy as cp
 # ---------------------------------------------------------------------------
 # Generates (n x m) unique random indices per row from [0, max_i) entirely
 # on the GPU.  Each thread owns one row and runs a partial Fisher-Yates
-# shuffle with an inline xorshift128+ RNG — no large scratch matrix, no
+# shuffle with an inline xorshift128+ RNG - no large scratch matrix, no
 # CPU round-trip, VRAM cost is O(n*m) only.
 # Constraint: m <= 100  (matches neighbor_set_size*3 <= 100 expectation).
 # ---------------------------------------------------------------------------
@@ -27,7 +27,7 @@ void partial_fisher_yates(int* out, int n, int max_i, int m,
     s0 ^= s0 << 23; s0 ^= s0 >> 17; s0 ^= s1 ^ (s1 >> 26);
     s1 ^= s1 << 23;
 
-    // Stack-allocated swap buffer — holds virtual positions of already-swapped
+    // Stack-allocated swap buffer - holds virtual positions of already-swapped
     // elements so we never materialise the full [0, max_i) array.
     // m <= 100 is guaranteed by the caller.
     int buf[100];
@@ -70,7 +70,7 @@ def _rand_indices_gpu(max_i: int, n: int, m: int, seed: int = 0) -> cp.ndarray:
     Returns a (n, m) CuPy int32 array of unique random indices per row,
     drawn without replacement from [0, max_i).
 
-    Replaces __rand_indices_noduplicates_on_rows entirely — no CPU work,
+    Replaces __rand_indices_noduplicates_on_rows entirely - no CPU work,
     no PCIe transfer, O(n*m) VRAM.
     """
     assert m <= 100, "Fisher-Yates kernel supports m <= 100 only"
@@ -85,7 +85,7 @@ def _rand_indices_gpu(max_i: int, n: int, m: int, seed: int = 0) -> cp.ndarray:
 
 
 # ---------------------------------------------------------------------------
-# Vectorized duplicate mask — replaces Numba row_wise_duplicate_indices
+# Vectorized duplicate mask - replaces Numba row_wise_duplicate_indices
 # ---------------------------------------------------------------------------
 
 def _row_wise_duplicate_mask(ar: cp.ndarray) -> cp.ndarray:
@@ -94,7 +94,7 @@ def _row_wise_duplicate_mask(ar: cp.ndarray) -> cp.ndarray:
     a duplicate of the previous entry in the same row (ar is pre-sorted) or
     equals the row's own index (point is its own neighbour).
 
-    Replaces the @nb.njit row_wise_duplicate_indices — fully vectorized on GPU,
+    Replaces the @nb.njit row_wise_duplicate_indices - fully vectorized on GPU,
     no CPU round-trip.
     """
     n = ar.shape[0]
@@ -136,7 +136,7 @@ def _update_neighbors(curr_neighbors: cp.ndarray,
 
     Changes vs. original:
     - row_wise_duplicate_indices (Numba CPU) replaced by _row_wise_duplicate_mask (GPU).
-    - np.argwhere result (diff_near) was computed but never used — dropped.
+    - np.argwhere result (diff_near) was computed but never used - dropped.
     """
     curr_neighbors[:, k:] = new_randoms
     index_order = cp.argsort(curr_neighbors, axis=1)
@@ -154,7 +154,7 @@ def _update_neighbors(curr_neighbors: cp.ndarray,
 
 
 def _smooth_stress(stresses: list) -> float:
-    """Rolling mean over the last 32 stress values. Kept on CPU — tiny array."""
+    """Rolling mean over the last 32 stress values. Kept on CPU - tiny array."""
     width = 32
     if len(stresses) < width:
         return float('inf')
@@ -182,7 +182,7 @@ def _compute_forces_and_layout(data: cp.ndarray,
                                 end: int,
                                 alpha: float = 1.0):
     """
-    Core force + gradient step — drop-in CuPy replacement.
+    Core force + gradient step - drop-in CuPy replacement.
     All tensor operations run on the GPU unchanged from the NumPy original.
     """
     k_neighbors = neighbors.shape[1]
@@ -302,10 +302,10 @@ def execute_glimmer_gpu(
 
     n = data.shape[0]
 
-    # Randomised row order — done on CPU, then moved to GPU as int32
+    # Randomised row order - done on CPU, then moved to GPU as int32
     rand_indices_cpu = rng.permutation(n).astype(np.int32)
 
-    # Level sizes (CPU — just a short list)
+    # Level sizes (CPU - just a short list)
     level_sizes = [n]
     n_levels = 0
     while level_sizes[n_levels] >= min_level_size * decimation_factor:
@@ -323,7 +323,7 @@ def execute_glimmer_gpu(
     rand_indices    = cp.asarray(rand_indices_cpu, dtype=cp.int32)
     neighbors_gpu   = cp.zeros((n, neighbor_set_size * 3), dtype=cp.int32)
 
-    # Seed counter for the Fisher-Yates kernel — incremented each call so
+    # Seed counter for the Fisher-Yates kernel - incremented each call so
     # successive calls produce independent random draws.
     _kernel_seed = 0
 
@@ -349,7 +349,7 @@ def execute_glimmer_gpu(
                 current_n, current_n, neighbor_set_size * 3
             )
 
-        # Slices for this level — views into the full GPU arrays
+        # Slices for this level - views into the full GPU arrays
         current_data      = data_gpu[current_index_set]
         current_embedding = embedding_gpu[current_index_set]
         current_forces    = forces_gpu[current_index_set]
@@ -385,7 +385,7 @@ def execute_glimmer_gpu(
             stresses.append(stress / current_n)
             sm_stress = _smooth_stress(stresses)
 
-            # Callback — transfer GPU arrays to CPU only when a real callback was provided,
+            # Callback - transfer GPU arrays to CPU only when a real callback was provided,
             # avoiding unnecessary PCIe transfers in the common no-callback case.
             if not _no_callback:
                 def get_embedding() -> np.ndarray:
