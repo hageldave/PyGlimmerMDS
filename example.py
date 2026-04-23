@@ -57,7 +57,7 @@ def main_animate():
 
 
     dataset = dict(data=data, labels=labels)
-    mds = Glimmer(rng=rng, gpu=False)
+    mds = Glimmer(rng=rng, gpu=True)
     animate_glimmer(dataset, mds)
 
 def main_simple():
